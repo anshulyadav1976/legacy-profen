@@ -71,6 +71,36 @@ Open `http://localhost:8000/frontend/` in the browser. The viewer loads `../jwst
 
 Viewer features: clustering, focus+context lens, neighborhood expansion, and module/class subgraph filters.
 
+## MCP Server (Phase 3)
+
+```powershell
+.\.venv\Scripts\python -m codeintel.mcp_server --graph jwst_graph.json --transport stdio
+```
+
+For HTTP transport:
+
+```powershell
+.\.venv\Scripts\python -m codeintel.mcp_server --graph jwst_graph.json --transport streamable-http --host 127.0.0.1 --port 8001
+```
+
+Smoke test (stdio client):
+
+```powershell
+.\.venv\Scripts\python scripts\mcp_smoke.py --graph jwst_graph.json
+```
+
+Cursor MCP template is available at `cursor_mcp.json`.
+Update `cursor_mcp.json` with your `OPENROUTER_API_KEY` and preferred `OPENROUTER_MODEL`.
+
+## Migration Planning Tool
+
+The MCP server exposes `migration_plan`, which uses OpenRouter for plan generation. Configure these environment variables:
+
+- `OPENROUTER_API_KEY`
+- `OPENROUTER_MODEL` (e.g., a Gemini model on OpenRouter)
+- `OPENROUTER_APP_TITLE` (optional)
+- `OPENROUTER_APP_URL` (optional)
+
 ## Target Codebase
 - Local JWST repository is expected at `/jwst-main`.
 - Do not clone from GitHub; parse the local folder only.

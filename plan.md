@@ -21,12 +21,22 @@ This document outlines the step-by-step phases to build the Code Intelligence En
 
 ## Phase 3: Model Context Protocol (MCP) Server
 
-- [ ] Install the official Model Context Protocol Python SDK.
-- [ ] Initialize a basic MCP server that listens on `stdio` and loads the NetworkX graph from the JSON file into memory. [Image of Model Context Protocol architecture]
-- [ ] Implement the `get_dependencies` tool: Given a function name, use NetworkX functions (e.g., `G.successors()`) to return its incoming and outgoing calls.
-- [ ] Implement the `impact_analysis` tool: Given a changed file or class, calculate its blast radius by finding upstream dependencies.
-- [ ] Implement the `graph_path` tool: Use `nx.shortest_path()` to allow the agent to find the connection between any two structural nodes.
-- [ ] Test the MCP server locally using an MCP inspector or basic client script.
+- [x] Install the official Model Context Protocol Python SDK.
+- [x] Initialize a basic MCP server that listens on `stdio` and loads the NetworkX graph from the JSON file into memory. [Image of Model Context Protocol architecture]
+- [x] Implement the `get_dependencies` tool: Given a function name, use NetworkX functions (e.g., `G.successors()`) to return its incoming and outgoing calls.
+- [x] Implement the `impact_analysis` tool: Given a changed file or class, calculate its blast radius by finding upstream dependencies.
+- [x] Implement the `graph_path` tool: Use `nx.shortest_path()` to allow the agent to find the connection between any two structural nodes.
+- [x] Implement the `search` tool: Find nodes by partial name, qualname, or path with type filters.
+- [x] Implement the `subgraph` tool: Return a bounded neighborhood around a seed node with filters and hop limits.
+- [x] Implement the `stats` tool: Provide hub nodes, cluster sizes, and module breakdowns for quick orientation.
+- [x] Implement graph snapshot metadata (timestamp, source root, counts) so agents can validate freshness.
+- [x] Test the MCP server locally using an MCP inspector or basic client script.
+- [x] Implement `migration_plan` tool: generate a migration plan using OpenRouter + Gemini 3.1.
+- [x] Add OpenRouter config support in MCP server (model name, API key via env).
+- [x] Include graph context in migration prompts (stats, hubs, module breakdown, subgraph).
+- [x] Return a Cursor-ready prompt to create a Markdown plan file with Mermaid diagrams and checklists.
+- [x] Support `outline_only`/`dry_run` mode to keep output short for iteration.
+- [x] Add tests for the migration planning tool (mocked HTTP).
 
 ## Phase 4: Workflow Mining & Partner Tech Integration
 

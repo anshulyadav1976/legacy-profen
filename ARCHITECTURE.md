@@ -22,6 +22,10 @@ flowchart LR
 - `codeintel/graph.py`: NetworkX graph builder and schema.
 - `codeintel/storage.py`: JSON save/load helpers for the graph.
 - `codeintel/pipeline.py`: End-to-end graph build pipeline and CLI entrypoint.
+- `codeintel/mcp_graph.py`: Graph query service powering MCP tools.
+- `codeintel/mcp_server.py`: MCP server exposing graph tools over stdio/HTTP.
+- `codeintel/migration.py`: Migration plan generator (OpenRouter + graph context).
+- `codeintel/openrouter_client.py`: OpenRouter HTTP client helper.
 - `frontend/`: Static browser-based graph viewer (Cytoscape).
 
 ## Planned (Future Phases)

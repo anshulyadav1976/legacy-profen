@@ -49,3 +49,7 @@ def bar():
         assert out_path.exists()
         assert graph.number_of_nodes() > 0
         assert graph.number_of_edges() > 0
+        snapshot = graph.graph.get("snapshot", {})
+        assert snapshot.get("source_root") == str(root)
+        assert snapshot.get("node_count") == graph.number_of_nodes()
+        assert snapshot.get("edge_count") == graph.number_of_edges()

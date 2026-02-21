@@ -43,3 +43,18 @@ Use this checklist during the hackathon demo. Each item includes a one-liner to 
 
 - [ ] Reset the view
   Click **Reset View** to clear expansions and cluster selection
+
+- [ ] Start MCP server (stdio)
+  `.\.venv\Scripts\python -m codeintel.mcp_server --graph jwst_graph.json --transport stdio`
+
+- [ ] Start MCP server (HTTP)
+  `.\.venv\Scripts\python -m codeintel.mcp_server --graph jwst_graph.json --transport streamable-http --host 127.0.0.1 --port 8001`
+
+- [ ] MCP smoke test (stdio client)
+  `.\.venv\Scripts\python scripts\mcp_smoke.py --graph jwst_graph.json`
+
+- [ ] Generate migration plan (MCP tool)
+  Use `migration_plan` with goal/scope/constraints and seed queries like `jwst` or `Step`
+
+- [ ] Ensure OpenRouter env is set
+  `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` must be available to the MCP server

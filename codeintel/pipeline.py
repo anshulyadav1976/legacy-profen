@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .extract import extract_symbols
@@ -45,6 +46,12 @@ def build_graph_from_root(
         extracted.append(extract_symbols(parsed, path=path))
 
     graph = build_graph(extracted)
+    graph.graph["snapshot"] = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "source_root": str(root_path),
+        "node_count": graph.number_of_nodes(),
+        "edge_count": graph.number_of_edges(),
+    }
 
     if output_path:
         save_graph(graph, output_path)

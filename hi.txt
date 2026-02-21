@@ -1,0 +1,19 @@
+Problem & goal: “Legacy codebases are huge and opaque; we need a fast, local code‑intelligence   
+    layer that turns code into a queryable graph.”                                                   
+  - What we built: “A local pipeline that parses the JWST codebase with Tree‑sitter, extracts        
+    structure, and builds a NetworkX knowledge graph.”                                               
+  - Knowledge graph: “Nodes are Files/Classes/Functions; edges are CALLS, IMPORTS, INHERITS; saved as
+    JSON so we don’t re‑parse every run.”                                                            
+  - Visualization: “A browser viewer that filters, clusters, and explores subgraphs with             
+    focus+context and neighborhood expansion.”                                                       
+  - MCP server: “Loads the graph into memory and exposes tools to any AI agent via MCP.”             
+  - Key tools: “search, get_dependencies, impact_analysis, graph_path, subgraph, stats.”
+  - Why it matters: “Agents can instantly answer ‘what breaks if I change this?’ and ‘how is this    
+    code connected?’ without scanning the entire repo.”                                              
+  - Legacy migration value: “Impact analysis + dependency paths map refactor risk, while subgraphs   
+    isolate modules for staged migration.”                                                           
+  - Partner integrations: “Lovable UI for graph exploration, CodeWords workflows on PRs, Dust agent  
+    for migration planning.”                                                                         
+  - Proof: “Graph built from JWST, visualized in browser, and queried live from Cursor through MCP.” 
+ 
+ 
