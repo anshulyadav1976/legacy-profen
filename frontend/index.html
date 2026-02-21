@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JWST Code Graph Viewer</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">Code Intelligence Engine</div>
+        <h1>JWST Knowledge Graph</h1>
+      </div>
+      <div class="status" id="status">Idle</div>
+    </header>
+
+    <div class="content">
+      <aside class="panel">
+        <section>
+          <h2>Load Graph</h2>
+          <label class="field">
+            <span>Graph JSON path</span>
+            <input id="graphPath" type="text" value="/jwst_graph.json" />
+          </label>
+          <div class="row">
+            <label class="field">
+              <span>Max nodes</span>
+            <input id="maxNodes" type="number" min="100" max="20000" value="800" />
+          </label>
+          <label class="field">
+            <span>Layout</span>
+            <select id="layoutType">
+              <option value="grid">Grid</option>
+              <option value="cose">Force (cose)</option>
+              <option value="circle">Circle</option>
+              <option value="concentric">Concentric</option>
+            </select>
+          </label>
+          </div>
+          <button id="loadGraph">Load Graph</button>
+        </section>
+
+        <section>
+          <h2>Filters</h2>
+          <div class="chips">
+            <label class="chip">
+              <input type="checkbox" id="filterFunction" checked />
+              <span>Function</span>
+            </label>
+            <label class="chip">
+              <input type="checkbox" id="filterClass" checked />
+              <span>Class</span>
+            </label>
+            <label class="chip">
+              <input type="checkbox" id="filterFile" checked />
+              <span>File</span>
+            </label>
+            <label class="chip">
+              <input type="checkbox" id="filterExternal" checked />
+              <span>External</span>
+            </label>
+          </div>
+          <div class="chips">
+            <label class="chip">
+              <input type="checkbox" id="edgeCalls" checked />
+              <span>CALLS</span>
+            </label>
+            <label class="chip">
+              <input type="checkbox" id="edgeImports" checked />
+              <span>IMPORTS</span>
+            </label>
+            <label class="chip">
+              <input type="checkbox" id="edgeInherits" checked />
+              <span>INHERITS</span>
+            </label>
+          </div>
+          <button id="applyFilters">Apply Filters</button>
+        </section>
+
+        <section>
+          <h2>Performance</h2>
+          <label class="field">
+            <span>Max edges</span>
+            <input id="maxEdges" type="number" min="100" max="50000" value="4000" />
+          </label>
+          <label class="field">
+            <span>Label mode</span>
+            <select id="labelMode">
+              <option value="auto">Auto</option>
+              <option value="on">On</option>
+              <option value="off">Off</option>
+            </select>
+          </label>
+        </section>
+
+        <section>
+          <h2>Subgraph</h2>
+          <label class="field">
+            <span>Module group</span>
+            <input id="moduleFilter" type="text" list="moduleOptions" placeholder="e.g. jwst" />
+            <datalist id="moduleOptions"></datalist>
+          </label>
+          <label class="field">
+            <span>Class</span>
+            <input id="classFilter" type="text" list="classOptions" placeholder="e.g. Step" />
+            <datalist id="classOptions"></datalist>
+          </label>
+          <div class="row">
+            <button id="applySubgraph">Apply</button>
+            <button id="resetSubgraph">Reset</button>
+          </div>
+        </section>
+
+        <section>
+          <h2>Lens</h2>
+          <label class="chip">
+            <input type="checkbox" id="focusMode" />
+            <span>Focus + Context</span>
+          </label>
+          <label class="field">
+            <span>Neighborhood hops</span>
+            <input id="focusHops" type="number" min="1" max="4" value="1" />
+          </label>
+          <div class="row">
+            <button id="expandNeighborhood">Expand</button>
+            <button id="resetView">Reset View</button>
+          </div>
+        </section>
+
+        <section>
+          <h2>Business Logic</h2>
+          <label class="chip">
+            <input type="checkbox" id="coreLogic" />
+            <span>Core logic mode</span>
+          </label>
+          <label class="field">
+            <span>Min degree</span>
+            <input id="minDegree" type="number" min="0" max="50" value="2" />
+          </label>
+          <div class="list" id="hubList"></div>
+        </section>
+
+        <section>
+          <h2>Clusters</h2>
+          <label class="field">
+            <span>Cluster</span>
+            <select id="clusterSelect">
+              <option value="">All clusters</option>
+            </select>
+          </label>
+          <label class="chip">
+            <input type="checkbox" id="colorByCluster" />
+            <span>Color by cluster</span>
+          </label>
+          <button id="recomputeClusters">Recompute</button>
+        </section>
+
+        <section>
+          <h2>Search</h2>
+          <label class="field">
+            <span>Node name or ID</span>
+            <input id="searchQuery" type="text" placeholder="e.g. Foo.method" />
+          </label>
+          <div class="row">
+            <button id="searchBtn">Find</button>
+            <button id="clearSearch">Clear</button>
+          </div>
+        </section>
+
+        <section>
+          <h2>Selection</h2>
+          <div class="selection" id="selection">
+            <div class="muted">No node selected.</div>
+          </div>
+        </section>
+      </aside>
+
+      <main class="viewer">
+        <div id="cy"></div>
+        <div class="legend">
+          <div><span class="dot function"></span>Function</div>
+          <div><span class="dot class"></span>Class</div>
+          <div><span class="dot file"></span>File</div>
+          <div><span class="dot external"></span>External</div>
+        </div>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

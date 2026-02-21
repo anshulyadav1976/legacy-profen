@@ -1,0 +1,144 @@
+"""Replace bad pixels in the input images with the median of the surrounding pixels."""
+
+import logging
+
+import numpy as np
+from stdatamodels.jwst.datamodels import dqflags
+
+log = logging.getLogger(__name__)
+
+__all__ = ["median_fill_value", "median_replace_img", "separate_non_science_pixels"]
+
+
+def median_fill_value(input_array, input_dq_array, bsize, bad_bitvalue, xc, yc):
+    """
+    Calculate the median value of good pixels in a cutout of the input array.
+
+    Parameters
+    ----------
+    input_array : numpy.ndarray
+        Input array to filter
+
+    input_dq_array : numpy.ndarray
+        Input data quality array
+
+    bsize : scalar
+        Box size of the data to extract
+
+    bad_bitvalue : int
+        The sum of all of the DQ bit values to consider bad. Setting to 0
+        will treat all pixels as good.
+
+    xc : scalar
+        X position of the data extraction
+
+    yc : scalar
+        Y position of the data extraction
+
+    Returns
+    -------
+    median_value : float
+        The calculated median value
+    """
+    # Set the half box size
+    hbox = int(bsize / 2)
+
+    # Extract the region of interest for the data
+    # If the index is out of range, this will return empty arrays.
+    data_array = input_array[xc - hbox : xc + hbox + 1, yc - hbox : yc + hbox + 1]
+    dq_array = input_dq_array[xc - hbox : xc + hbox + 1, yc - hbox : yc + hbox + 1]
+
+    # Calculate the median value using only good pixels
+    good = np.isfinite(data_array) & (dq_array & bad_bitvalue == 0)
+    if np.any(good):
+        median_value = np.median(data_array[good])
+    else:
+        # No good pixels, return 0
+        median_value = 0.0
+
+    return median_value
+
+
+def median_replace_img(img_model, box_size, bad_bitvalue):
+    """
+    Replace any bad pixels with the median value of the surrounding pixels.
+
+    Parameters
+    ----------
+    img_model : CubeModel
+        The input model
+
+    box_size : scalar
+        Box size for the median filter
+
+    bad_bitvalue : int
+        The sum of all of the DQ bit values to consider bad. Setting to 0
+        will treat all pixels as good.
+
+    Returns
+    -------
+    img_model : CubeModel
+        The updated image model with the bad pixels replaced
+    """
+    n_ints, _, _ = img_model.data.shape
+    for nimage in range(n_ints):
+        img_int = img_model.data[nimage]
+        img_dq = img_model.dq[nimage]
+
+        # Bad locations are defined as pixels set to NaN and/or pixels with
+        # DQ flags contained in the list of bad dq bits
+        bad_locations = (img_dq & bad_bitvalue > 0) | np.isnan(img_int)
+
+        # If it's MIRI coronagraphy, only use the bad locations that are in the
+        # science aperture (i.e. not flagged as NON_SCIENCE). Set the others to 0
+        # directly to avoid thousands of logging warnings.
+        if img_model.meta.instrument.name == "MIRI":
+            bad_locations, non_science = separate_non_science_pixels(img_dq, bad_locations)
+            # skip the median filter for non-science pixels
+            img_int[non_science] = 0
+
+        # Fill the bad pixel values with the median of the data in the specified box region
+        bad_idx = np.where(bad_locations)
+        for i_pos in range(len(bad_idx[0])):
+            # note: x and y are switched here but median_fill_value is
+            # consistent with their usage here so it's all OK
+            x_box_pos = bad_idx[0][i_pos]
+            y_box_pos = bad_idx[1][i_pos]
+            median_fill = median_fill_value(
+                img_int, img_dq, box_size, bad_bitvalue, x_box_pos, y_box_pos
+            )
+            img_int[x_box_pos, y_box_pos] = median_fill
+
+        img_model.data[nimage] = img_int
+
+    return img_model
+
+
+def separate_non_science_pixels(img_dq, bad_locations):
+    """
+    Generate masks for science pixels and non-science pixels.
+
+    For the median filter, we don't care about the NON_SCIENCE pixels, but they
+    produce a ton of warnings that clog up the alignment algorithm and make it
+    run really slowly. In this function, we take all the bad pixels and pull out
+    the ones with NON_SCIENCE flags so we can set them to 0 without running the
+    median filter.
+
+    Parameters
+    ----------
+    img_dq : numpy.ndarray
+        Input data quality array.
+    bad_locations : numpy.ndarray of bool
+        Flagged bad pixels.
+
+    Returns
+    -------
+    science_pixels : numpy.ndarray of bool
+        Flagged science pixels.
+    non_science_pixels : numpy.ndarray of bool
+        Flagged non-science pixels.
+    """
+    is_non_science = img_dq & dqflags.pixel["NON_SCIENCE"] > 0
+    science_pixels = bad_locations & ~is_non_science
+    non_science_pixels = bad_locations & is_non_science
+    return science_pixels, non_science_pixels

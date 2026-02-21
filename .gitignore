@@ -1,0 +1,27 @@
+# Python
+.venv/
+/venv/
+.jwst-main/
+/jwst-main/jwst-main/
+/jwst-main/jwst-main/jwst-main/
+/jwst-main/jwst-main/jwst-main/jwst-main/
+/jwst-main/jwst-main/jwst-main/jwst-main/
+__pycache__/
+.jwst-main/
+.jwst-main/
+.jwst-main/
+.jwst-main/
+
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+.pytest_cache/
+.mypy_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Outputs
+*.json

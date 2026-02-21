@@ -1,0 +1,61 @@
+import logging
+
+from stdatamodels.jwst import datamodels
+
+from jwst.stpipe import Step
+from jwst.superbias import bias_sub
+
+__all__ = ["SuperBiasStep"]
+
+log = logging.getLogger(__name__)
+
+
+class SuperBiasStep(Step):
+    """Subtract super-bias reference data from the input science data model."""
+
+    class_alias = "superbias"
+
+    spec = """
+    """  # noqa: E501
+
+    reference_file_types = ["superbias"]
+
+    def process(self, step_input):
+        """
+        Apply the superbias correction.
+
+        Parameters
+        ----------
+        step_input : str or `~stdatamodels.jwst.datamodels.RampModel`
+            Either the path to the file or the science data model to be corrected.
+
+        Returns
+        -------
+        `~stdatamodels.jwst.datamodels.RampModel`
+            Superbias-corrected science data model.
+        """
+        # Open the input data model
+        result = self.prepare_output(step_input, open_as_type=datamodels.RampModel)
+
+        # Get the name of the superbias reference file to use
+        bias_name = self.get_reference_file(result, "superbias")
+        log.info("Using SUPERBIAS reference file %s", bias_name)
+
+        # Check for a valid reference file
+        if bias_name == "N/A":
+            log.warning("No SUPERBIAS reference file found")
+            log.warning("Superbias step will be skipped")
+            result.meta.cal_step.superbias = "SKIPPED"
+            return result
+
+        # Open the superbias ref file data model
+        bias_model = datamodels.SuperBiasModel(bias_name)
+
+        # Do the bias subtraction
+        result = bias_sub.do_correction(result, bias_model)
+        result.meta.cal_step.superbias = "COMPLETE"
+
+        # Cleanup
+        del bias_model
+
+        return result
