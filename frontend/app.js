@@ -13,12 +13,18 @@ const state = {
   colorByCluster: false,
   labelMode: "auto",
   labelEnabled: true,
+  workflows: null,
+  filteredWorkflows: [],
+  selectedWorkflow: null,
 };
 
 const statusEl = document.getElementById("status");
-const selectionEl = document.getElementById("selection");
 
 const controls = {
+  tabGraph: document.getElementById("tabGraph"),
+  tabWorkflows: document.getElementById("tabWorkflows"),
+  graphTab: document.getElementById("graphTab"),
+  workflowTab: document.getElementById("workflowTab"),
   graphPath: document.getElementById("graphPath"),
   maxNodes: document.getElementById("maxNodes"),
   maxEdges: document.getElementById("maxEdges"),
@@ -50,6 +56,24 @@ const controls = {
   searchQuery: document.getElementById("searchQuery"),
   searchBtn: document.getElementById("searchBtn"),
   clearSearch: document.getElementById("clearSearch"),
+  selection: document.getElementById("selection"),
+  workflowPath: document.getElementById("workflowPath"),
+  loadWorkflows: document.getElementById("loadWorkflows"),
+  workflowSearch: document.getElementById("workflowSearch"),
+  workflowConfidence: document.getElementById("workflowConfidence"),
+  applyWorkflowFilters: document.getElementById("applyWorkflowFilters"),
+  workflowList: document.getElementById("workflowList"),
+  workflowTitle: document.getElementById("workflowTitle"),
+  workflowSummary: document.getElementById("workflowSummary"),
+  workflowMeta: document.getElementById("workflowMeta"),
+  workflowSteps: document.getElementById("workflowSteps"),
+  workflowDecisions: document.getElementById("workflowDecisions"),
+  workflowInputs: document.getElementById("workflowInputs"),
+  workflowOutputs: document.getElementById("workflowOutputs"),
+  workflowRisks: document.getElementById("workflowRisks"),
+  workflowMermaid: document.getElementById("workflowMermaid"),
+  workflowNodes: document.getElementById("workflowNodes"),
+  viewInGraph: document.getElementById("viewInGraph"),
 };
 
 const TYPE_COLORS = {
@@ -130,7 +154,7 @@ function toElements(raw) {
     degree.set(link.target, (degree.get(link.target) || 0) + 1);
   }
 
-  const elements = {
+  return {
     nodes: nodes.map((node) => {
       const type = node.type || "File";
       const isExternal = Boolean(node.external || node.path === null);
@@ -161,8 +185,6 @@ function toElements(raw) {
       },
     })),
   };
-
-  return elements;
 }
 
 function buildMaps(elements) {
@@ -245,9 +267,7 @@ function applyFilter(elements) {
   }
 
   return { nodes, edges: edges.map((edge) => ({ data: { ...edge.data } })) };
-}
-
-function applyCoreLogic(elements) {
+}function applyCoreLogic(elements) {
   if (!controls.coreLogic.checked) return elements;
   const minDegree = parseInt(controls.minDegree.value, 10) || 0;
   const nodes = elements.nodes.filter(
@@ -416,11 +436,9 @@ function applyClusterData(elements) {
   state.colorByCluster = colorBy;
 
   const clusterColorMap = new Map();
-  if (clusterInfo) {
-    for (const cluster of clusterInfo.clusters) {
-      const color = CLUSTER_COLORS[cluster.id % CLUSTER_COLORS.length];
-      clusterColorMap.set(cluster.id, color);
-    }
+  for (const cluster of clusterInfo.clusters) {
+    const color = CLUSTER_COLORS[cluster.id % CLUSTER_COLORS.length];
+    clusterColorMap.set(cluster.id, color);
   }
 
   for (const node of elements.nodes) {
@@ -543,18 +561,17 @@ function shouldShowLabels(nodeCount) {
 function labelFor(node) {
   if (!state.labelEnabled) return "";
   return node.data("label") || "";
-}
-
-function initCy(elements) {
+}function initCy(elements) {
   if (state.cy) {
     state.cy.destroy();
   }
 
+  const nodeCount = elements.filter((el) => el.data && !el.data.source).length;
   state.cy = cytoscape({
     container: document.getElementById("cy"),
     elements,
     layout: {
-      name: chooseLayout(elements.filter((el) => el.data && !el.data.source).length),
+      name: chooseLayout(nodeCount),
       animate: false,
       nodeRepulsion: 8000,
       nodeDimensionsIncludeLabels: true,
@@ -681,7 +698,7 @@ function showSelection(node) {
     ["Cluster", data.cluster ?? "-"],
     ["Degree", data.degree],
   ];
-  selectionEl.innerHTML = lines
+  controls.selection.innerHTML = lines
     .map(
       ([label, value]) =>
         `<div class="item"><span>${label}</span><span>${value}</span></div>`
@@ -691,7 +708,7 @@ function showSelection(node) {
 
 function clearSelection() {
   state.selectedNodeId = null;
-  selectionEl.innerHTML = '<div class="muted">No node selected.</div>';
+  controls.selection.innerHTML = '<div class="muted">No node selected.</div>';
   if (state.cy) {
     state.cy.elements().removeClass("focus").removeClass("dim");
   }
@@ -776,7 +793,6 @@ async function loadGraph() {
 
   const { nodes, links } = extractGraph(data);
   if (!nodes.length && !links.length) {
-    console.warn("Unrecognized graph JSON", data);
     setStatus("Invalid graph JSON (missing nodes/links)");
     return;
   }
@@ -813,6 +829,178 @@ function renderGraph() {
   initCy([...view.nodes, ...view.edges]);
   buildHubList(view);
   setStatus(`Showing ${view.nodes.length} nodes / ${view.edges.length} edges`);
+}function initMermaid() {
+  if (!window.mermaid) return;
+  window.mermaid.initialize({ startOnLoad: false, theme: "neutral" });
+}
+
+function renderMermaid(diagram) {
+  if (!controls.workflowMermaid) return;
+  const text = diagram || "flowchart TD\nA[No diagram]";
+  controls.workflowMermaid.textContent = text;
+  if (window.mermaid) {
+    window.mermaid.run({ nodes: [controls.workflowMermaid] });
+  }
+}
+
+async function loadWorkflows() {
+  const path = controls.workflowPath.value.trim();
+  if (!path) {
+    setStatus("Workflow path missing");
+    return;
+  }
+  setStatus("Loading workflows...");
+  const response = await fetch(path);
+  if (!response.ok) {
+    setStatus(`Failed to load workflows (${response.status})`);
+    return;
+  }
+  const data = await response.json();
+  state.workflows = data;
+  state.filteredWorkflows = data.workflows || [];
+  setStatus(`Loaded ${state.filteredWorkflows.length} workflows`);
+  renderWorkflowList(state.filteredWorkflows);
+  if (state.filteredWorkflows.length) {
+    selectWorkflow(state.filteredWorkflows[0]);
+  }
+}
+
+function applyWorkflowFilters() {
+  if (!state.workflows) return;
+  const search = (controls.workflowSearch.value || "").toLowerCase();
+  const confidence = controls.workflowConfidence.value;
+  const workflows = (state.workflows.workflows || []).filter((wf) => {
+    const title = (wf.title || "").toLowerCase();
+    const summary = (wf.summary || "").toLowerCase();
+    const matchText = title.includes(search) || summary.includes(search);
+    const matchConfidence = confidence ? wf.confidence === confidence : true;
+    return matchText && matchConfidence;
+  });
+  state.filteredWorkflows = workflows;
+  renderWorkflowList(workflows);
+  if (workflows.length) {
+    selectWorkflow(workflows[0]);
+  }
+}
+
+function renderWorkflowList(workflows) {
+  controls.workflowList.innerHTML = "";
+  if (!workflows || workflows.length === 0) {
+    controls.workflowList.innerHTML =
+      "<div class='muted'>No workflows found.</div>";
+    return;
+  }
+  for (const workflow of workflows) {
+    const button = document.createElement("button");
+    button.className = "list-item";
+    button.textContent = workflowLabel(workflow);
+    button.addEventListener("click", () => selectWorkflow(workflow));
+    controls.workflowList.appendChild(button);
+  }
+}
+
+function workflowLabel(workflow) {
+  if (workflow.title) return workflow.title;
+  if (workflow.error) return "Workflow (error)";
+  return "Untitled workflow";
+}
+
+function selectWorkflow(workflow) {
+  state.selectedWorkflow = workflow;
+  const hasError = Boolean(workflow.error);
+  controls.workflowTitle.textContent = hasError
+    ? "Workflow generation failed"
+    : workflow.title || "Untitled workflow";
+  controls.workflowSummary.textContent = hasError ? workflow.error : workflow.summary || "";
+
+  const meta = [];
+  if (hasError) meta.push("Status: Error");
+  if (workflow.confidence) meta.push(`Confidence: ${workflow.confidence}`);
+  if (workflow.seed && workflow.seed.label) meta.push(`Seed: ${workflow.seed.label}`);
+  controls.workflowMeta.innerHTML = meta
+    .map((item) => `<span class='workflow-tag'>${item}</span>`)
+    .join("");
+
+  const listError = hasError ? "Unavailable (generation failed)" : null;
+  populateList(controls.workflowSteps, workflow.steps, null, listError);
+  populateList(controls.workflowDecisions, workflow.decision_points, null, listError);
+  populateList(controls.workflowInputs, workflow.inputs, "Inputs", listError);
+  populateList(controls.workflowOutputs, workflow.outputs, "Outputs", listError);
+  populateList(controls.workflowRisks, workflow.risks, null, listError);
+
+  const diagram = hasError
+    ? "flowchart TD\nA[Workflow generation failed]\nB[Check OpenRouter key]"
+    : workflow.mermaid;
+  renderMermaid(diagram);
+  renderSupportingNodes(workflow.supporting_nodes || []);
+  controls.viewInGraph.disabled =
+    hasError || !(workflow.supporting_nodes && workflow.supporting_nodes.length);
+}
+
+function populateList(element, items, label, errorMessage) {
+  element.innerHTML = "";
+  if (errorMessage) {
+    const item = document.createElement("li");
+    item.textContent = errorMessage;
+    item.className = "muted";
+    element.appendChild(item);
+    return;
+  }
+  if (label && items && items.length) {
+    const labelItem = document.createElement("li");
+    labelItem.textContent = label;
+    labelItem.className = "muted";
+    element.appendChild(labelItem);
+  }
+  if (!items || items.length === 0) {
+    const item = document.createElement("li");
+    item.textContent = "-";
+    element.appendChild(item);
+    return;
+  }
+  for (const value of items) {
+    const item = document.createElement("li");
+    item.textContent = value;
+    element.appendChild(item);
+  }
+}
+
+function renderSupportingNodes(nodes) {
+  controls.workflowNodes.innerHTML = "";
+  if (!nodes || nodes.length === 0) {
+    controls.workflowNodes.innerHTML = "<div class='muted'>No nodes.</div>";
+    return;
+  }
+  nodes.slice(0, 12).forEach((node) => {
+    const button = document.createElement("button");
+    button.className = "list-item";
+    button.textContent = node.qualname || node.name || node.id;
+    button.addEventListener("click", () => {
+      if (!node.id) return;
+      switchTab("graph");
+      controls.searchQuery.value = node.id;
+      applySearch(node.id);
+    });
+    controls.workflowNodes.appendChild(button);
+  });
+}
+
+function viewWorkflowInGraph() {
+  if (!state.selectedWorkflow) return;
+  const nodes = state.selectedWorkflow.supporting_nodes || [];
+  if (!nodes.length) return;
+  const query = nodes[0].id || nodes[0].qualname || nodes[0].name;
+  switchTab("graph");
+  controls.searchQuery.value = query;
+  applySearch(query);
+}
+
+function switchTab(tab) {
+  const isGraph = tab === "graph";
+  controls.graphTab.classList.toggle("hidden", !isGraph);
+  controls.workflowTab.classList.toggle("hidden", isGraph);
+  controls.tabGraph.classList.toggle("active", isGraph);
+  controls.tabWorkflows.classList.toggle("active", !isGraph);
 }
 
 controls.loadGraph.addEventListener("click", () => {
@@ -923,7 +1111,26 @@ controls.clearSearch.addEventListener("click", () => {
   applySearch("");
 });
 
+controls.loadWorkflows.addEventListener("click", () => {
+  loadWorkflows().catch((err) => {
+    console.error(err);
+    setStatus("Failed to load workflows");
+  });
+});
+
+controls.applyWorkflowFilters.addEventListener("click", () => {
+  applyWorkflowFilters();
+});
+
+controls.viewInGraph.addEventListener("click", () => {
+  viewWorkflowInGraph();
+});
+
+controls.tabGraph.addEventListener("click", () => switchTab("graph"));
+controls.tabWorkflows.addEventListener("click", () => switchTab("workflows"));
+
 window.addEventListener("DOMContentLoaded", () => {
   clearSelection();
   setStatus("Idle");
+  initMermaid();
 });

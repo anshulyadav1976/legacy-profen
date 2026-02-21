@@ -20,3 +20,5 @@ def test_frontend_assets_exist():
     assert "moduleFilter" in content
     assert "classFilter" in content
     assert "clusterSelect" in content
+    assert "workflowTab" in content
+    assert "workflowPath" in content

@@ -6,6 +6,7 @@
   <title>JWST Code Graph Viewer</title>
   <link rel="stylesheet" href="styles.css" />
   <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -18,7 +19,12 @@
       <div class="status" id="status">Idle</div>
     </header>
 
-    <div class="content">
+    <nav class="tabs">
+      <button class="tab active" id="tabGraph" data-tab="graph">Graph</button>
+      <button class="tab" id="tabWorkflows" data-tab="workflows">Workflows</button>
+    </nav>
+
+    <div class="content" id="graphTab">
       <aside class="panel">
         <section>
           <h2>Load Graph</h2>
@@ -186,6 +192,78 @@
           <div><span class="dot class"></span>Class</div>
           <div><span class="dot file"></span>File</div>
           <div><span class="dot external"></span>External</div>
+        </div>
+      </main>
+    </div>
+
+    <div class="content hidden" id="workflowTab">
+      <aside class="panel">
+        <section>
+          <h2>Load Workflows</h2>
+          <label class="field">
+            <span>Artifacts JSON path</span>
+            <input id="workflowPath" type="text" value="/workflow_artifacts.json" />
+          </label>
+          <button id="loadWorkflows">Load Workflows</button>
+        </section>
+        <section>
+          <h2>Filters</h2>
+          <label class="field">
+            <span>Search</span>
+            <input id="workflowSearch" type="text" placeholder="e.g. ingestion" />
+          </label>
+          <label class="field">
+            <span>Confidence</span>
+            <select id="workflowConfidence">
+              <option value="">All</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </label>
+          <button id="applyWorkflowFilters">Apply</button>
+        </section>
+        <section>
+          <h2>Workflow Cards</h2>
+          <div class="list" id="workflowList"></div>
+        </section>
+      </aside>
+
+      <main class="viewer workflow-viewer">
+        <div class="workflow-detail" id="workflowDetail">
+          <h2 id="workflowTitle">No workflow selected</h2>
+          <p class="muted" id="workflowSummary">Load workflows to begin.</p>
+          <div class="workflow-meta" id="workflowMeta"></div>
+          <div class="workflow-sections">
+            <div>
+              <h3>Steps</h3>
+              <ul id="workflowSteps"></ul>
+            </div>
+            <div>
+              <h3>Decisions</h3>
+              <ul id="workflowDecisions"></ul>
+            </div>
+            <div>
+              <h3>Inputs / Outputs</h3>
+              <ul id="workflowInputs"></ul>
+              <ul id="workflowOutputs"></ul>
+            </div>
+            <div>
+              <h3>Risks</h3>
+              <ul id="workflowRisks"></ul>
+            </div>
+          </div>
+          <div class="workflow-mermaid">
+            <h3>Workflow Diagram</h3>
+            <pre class="mermaid" id="workflowMermaid"></pre>
+          </div>
+          <div class="workflow-support">
+            <div class="row">
+              <h3>Supporting Nodes</h3>
+              <button id="viewInGraph">View in Graph</button>
+            </div>
+            <div class="list" id="workflowNodes"></div>
+          </div>
         </div>
       </main>
     </div>

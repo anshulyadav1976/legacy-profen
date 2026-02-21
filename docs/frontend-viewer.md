@@ -28,6 +28,16 @@ Then browse to:
 http://localhost:8000/frontend/
 ```
 
+## Workflows Tab
+
+Generate workflow artifacts with OpenRouter and load them in the Workflows tab.
+
+```powershell
+.\.venv\Scripts\python -m codeintel.workflow_mining --graph jwst_graph.json --output workflow_artifacts.json --max-workflows 6 --hops 2 --openrouter-key-file openrouter.txt
+```
+
+Then open the Workflows tab and click **Load Workflows**. The viewer loads `../workflow_artifacts.json` by default.
+
 ## Controls
 - Filter node types and edge types.
 - Subgraph focus by module group or class, plus automatic neighborhood context.

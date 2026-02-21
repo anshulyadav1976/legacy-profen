@@ -25,3 +25,5 @@ Thumbs.db
 
 # Outputs
 *.json
+/env
+.env

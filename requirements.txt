@@ -1,5 +1,9 @@
 tree-sitter
 tree-sitter-python
 networkx
+httpx
 mcp
+fastapi
+uvicorn
+python-multipart
 pytest

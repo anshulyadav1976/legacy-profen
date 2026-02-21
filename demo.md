@@ -17,6 +17,15 @@ Use this checklist during the hackathon demo. Each item includes a one-liner to 
 - [ ] Load the graph JSON in the viewer
   Click **Load Graph** with path `/jwst_graph.json`
 
+- [ ] Generate workflow artifacts (OpenRouter)
+  `.\.venv\Scripts\python -m codeintel.workflow_mining --graph jwst_graph.json --output workflow_artifacts.json --max-workflows 6 --hops 2 --openrouter-key-file openrouter.txt`
+
+- [ ] Open the workflows tab
+  Click **Workflows** in the top navigation
+
+- [ ] Load workflow artifacts
+  Click **Load Workflows** with path `/workflow_artifacts.json`
+
 - [ ] Filter node/edge types
   Toggle **Function/Class/File/External** and **CALLS/IMPORTS/INHERITS** then click **Apply Filters**
 

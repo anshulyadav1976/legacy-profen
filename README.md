@@ -71,6 +71,19 @@ Open `http://localhost:8000/frontend/` in the browser. The viewer loads `../jwst
 
 Viewer features: clustering, focus+context lens, neighborhood expansion, and module/class subgraph filters.
 
+## Workflow Mining (Leadership View)
+
+Generate leadership-friendly workflow artifacts with OpenRouter and load them in the Workflows tab.
+
+```powershell
+.\.venv\Scripts\python -m codeintel.workflow_mining --graph jwst_graph.json --output workflow_artifacts.json --max-workflows 6 --hops 2 --openrouter-key-file openrouter.txt
+```
+
+The key file can be a raw key or a `.env` style line like `OPENROUTER_API_KEY=sk-...`.
+
+Then open `http://localhost:8000/frontend/`, switch to **Workflows**, and click **Load Workflows**.
+The viewer loads `../workflow_artifacts.json` by default.
+
 ## MCP Server (Phase 3)
 
 ```powershell
@@ -104,3 +117,25 @@ The MCP server exposes `migration_plan`, which uses OpenRouter for plan generati
 ## Target Codebase
 - Local JWST repository is expected at `/jwst-main`.
 - Do not clone from GitHub; parse the local folder only.
+
+## Graph Build API (Upload Zip or GitHub URL)
+
+Run the local API server:
+
+```powershell
+.\.venv\Scripts\python -m codeintel.api --host 127.0.0.1 --port 9000
+```
+
+POST a `.zip` archive of a repo folder to `/parse` and receive the graph JSON:
+
+```powershell
+curl -X POST http://127.0.0.1:9000/parse -F "file=@repo.zip"
+```
+
+Or pass a GitHub repo URL (or zip URL) directly:
+
+```powershell
+curl -X POST "http://127.0.0.1:9000/parse?repo_url=https://github.com/spacetelescope/jwst"
+```
+
+The API resolves the repo's default branch via the GitHub API when possible, then falls back to `main`/`master`.

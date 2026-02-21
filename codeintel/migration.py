@@ -8,11 +8,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from .mcp_graph import GraphService
-from .openrouter_client import (
-    OpenRouterConfig,
-    OpenRouterRequestError,
-    chat_completions,
-)
+from .llm_utils import extract_content, parse_json_content, repair_json_content
+from .openrouter_client import OpenRouterConfig, OpenRouterRequestError, chat_completions
 
 
 @dataclass(frozen=True)
@@ -97,18 +94,18 @@ def generate_migration_plan(
     except Exception as exc:  # pragma: no cover - unexpected
         error_message = str(exc)
 
-    content = _extract_content(response)
+    content = extract_content(response)
     plan_data = None
     error = error_message
     cursor_prompt = None
     plan_markdown = None
 
     if content:
-        plan_data, parse_error = _parse_plan_json(content)
+        plan_data, parse_error = parse_json_content(content)
         if plan_data is None and parse_error:
-            repaired = _repair_json(content, config)
+            repaired = repair_json_content(content, config, chat_completions)
             if repaired:
-                plan_data, parse_error = _parse_plan_json(repaired)
+                plan_data, parse_error = parse_json_content(repaired)
         if plan_data is None and parse_error:
             error = parse_error
 
@@ -135,61 +132,6 @@ def generate_migration_plan(
     )
 
 
-def _extract_content(response: dict[str, Any] | None) -> str | None:
-    if not response or not isinstance(response, dict):
-        return None
-    choices = response.get("choices")
-    if not choices:
-        return None
-    first = choices[0] if isinstance(choices, list) else None
-    if not isinstance(first, dict):
-        return None
-    message = first.get("message", {})
-    if not isinstance(message, dict):
-        return None
-    content = message.get("content")
-    return content if isinstance(content, str) else None
-
-
-def _parse_plan_json(content: str) -> tuple[dict[str, Any] | None, str | None]:
-    try:
-        return json.loads(content), None
-    except json.JSONDecodeError as exc:
-        candidate = _extract_json_candidate(content)
-        if candidate:
-            try:
-                return json.loads(candidate), None
-            except json.JSONDecodeError as exc2:
-                return None, f"Failed to parse JSON: {exc2}"
-        return None, f"Failed to parse JSON: {exc}"
-
-
-def _extract_json_candidate(content: str) -> str | None:
-    start = content.find("{")
-    end = content.rfind("}")
-    if start == -1 or end == -1 or end <= start:
-        return None
-    return content[start : end + 1]
-
-
-def _repair_json(content: str, config: OpenRouterConfig) -> str | None:
-    repair_prompt = (
-        "Fix the following output so it is valid JSON ONLY. "
-        "Do not include markdown or explanations. Preserve all fields.\n\n"
-        + content
-    )
-    try:
-        response = chat_completions(
-            config,
-            messages=[
-                {"role": "system", "content": "You are a JSON repair tool."},
-                {"role": "user", "content": repair_prompt},
-            ],
-            response_format=None,
-        )
-    except OpenRouterRequestError:
-        return None
-    return _extract_content(response)
 
 
 def build_graph_context(

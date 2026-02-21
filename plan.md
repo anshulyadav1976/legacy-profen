@@ -40,10 +40,15 @@ This document outlines the step-by-step phases to build the Code Intelligence En
 
 ## Phase 4: Workflow Mining & Partner Tech Integration
 
-- [ ] Build the Lovable web UI: Create a simple dashboard to visually display the Knowledge Graph and query results.
+- [x] Build the Lovable web UI: Create a simple dashboard to visually display the Knowledge Graph and query results.
 - [ ] Set up CodeWords automation: Create a workflow that triggers an automated codebase audit via the MCP server whenever a new Pull Request is opened.
 - [ ] Configure a Dust agent: Connect a Dust agent to the MCP server to act as the "Code Migration Assistant" capable of mapping out legacy code refactoring plans for the JWST codebase.
 - [ ] Finalize the end-to-end test: Run a CodeWords workflow against `/jwst-main`, query the in-memory graph, and have the Dust agent output a migration plan.
+- [x] Workflow mining artifacts: generate `workflow_artifacts.json` from graph subgraphs (entrypoints + hubs).
+- [x] LLM summarization: use OpenRouter + Gemini to label business workflows (steps, decisions, inputs/outputs, risks).
+- [x] Leadership UX: add a "Workflows" tab in the frontend with workflow cards, Mermaid diagrams, and supporting nodes.
+- [x] Traceability: "View in Graph" links from workflow cards to the underlying code subgraph.
+- [x] Graph build API: upload a repo zip and return the graph JSON.
 
 ## Phase 5: Hackathon Final Polish
 

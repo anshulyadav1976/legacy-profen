@@ -1,0 +1,1 @@
+OpenRouter_api_key=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
